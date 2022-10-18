@@ -1,5 +1,6 @@
 import { createContext, useEffect, useState } from 'react'
 import Router from 'next/router'
+import { setCookie } from 'nookies'
 import {
   onAuthStateChanged,
   createUserWithEmailAndPassword,
@@ -7,8 +8,10 @@ import {
   signOut,
 } from 'firebase/auth'
 import { auth } from '../services/config/auth/firebase'
+import { api } from '../services/api/api'
 
 type User = {
+  uid: string;
   name: string;
   email: string;
 }
@@ -39,7 +42,6 @@ export const AuthContextProvider = ({
 }) => {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  console.log(user)
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -63,6 +65,24 @@ export const AuthContextProvider = ({
 
   async function signIn({email, password} : SignInData){
     await signInWithEmailAndPassword(auth, email, password)
+    .then((userCredential) => {
+      const user = userCredential.user;
+      auth.currentUser?.getIdToken()
+      .then( token => {
+        //console.log(token)
+        setCookie(undefined,'next-firebase.token', token,{
+          maxAge : 60 * 60 * 1 //1 hour 
+        })
+        api.get('/',{
+        })
+        .then(res => {
+          console.log(res.data)
+        })
+        .catch(err => {
+          console.log("error",err.message)
+        })
+      })
+    })
     Router.push('/dashboard')
 
   }
